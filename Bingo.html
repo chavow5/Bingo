@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bingo 1-100</title>
+<style>
+:root{--bg:#f4f1ea;--card:#fff;--ink:#1d2433;--mute:#7a8296;--acc:#d6336c;--on:#d6336c;--onink:#fff;--line:#e2ddd0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151f;--card:#1b2030;--ink:#eef0f6;--mute:#8d95ab;--line:#2c3348}}
+:root[data-theme="dark"]{--bg:#12151f;--card:#1b2030;--ink:#eef0f6;--mute:#8d95ab;--line:#2c3348}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+.wrap{display:grid;grid-template-columns:minmax(260px,32%) 1fr;gap:20px;padding:20px;max-width:1500px;margin:0 auto}
+@media (max-width:820px){.wrap{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.label{font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--mute)}
+.big{width:min(70vw,260px);aspect-ratio:1;border-radius:50%;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:clamp(5rem,16vw,9rem);box-shadow:0 10px 30px rgba(214,51,108,.35)}
+.big.pop{animation:pop .45s ease}
+@keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.recent{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;min-height:48px}
+.recent span{width:46px;height:46px;border-radius:50%;border:2px solid var(--acc);display:flex;align-items:center;justify-content:center;font-weight:700}
+.btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%}
+button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:10px 16px;border-radius:12px;cursor:pointer}
+button.main{background:var(--acc);color:#fff;border-color:var(--acc);font-size:1.1rem;padding:14px 26px;width:100%}
+button:hover{filter:brightness(1.08)}
+.manual{display:flex;gap:8px;width:100%}
+.manual input{flex:1;min-width:0;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.count{color:var(--mute);font-size:.95rem}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--card);border:1px solid var(--line);color:var(--mute);font-weight:600;font-size:clamp(.8rem,2.4vw,1.8rem);cursor:pointer;user-select:none;transition:background .2s,color .2s}
+.cell.on{background:var(--on);color:var(--onink);border-color:var(--on);font-weight:800}
+.cell.last{outline:3px solid var(--ink);outline-offset:2px}
+.msg{color:var(--acc);min-height:1.2em;font-size:.9rem}
+body.full .panel.left{display:none}
+body.full .wrap{grid-template-columns:1fr}
+.exit-full-btn{display:none;position:fixed;bottom:20px;right:20px;z-index:1000;background:var(--acc);color:#fff;border:none;padding:12px 20px;border-radius:30px;font-weight:700;box-shadow:0 4px 15px rgba(0,0,0,.3);cursor:pointer}
+body.full .exit-full-btn{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel left">
+    <div class="label">Último número</div>
+    <div class="big" id="big">–</div>
+    <div class="label">Anteriores</div>
+    <div class="recent" id="recent"></div>
+    <div class="count" id="count"></div>
+    <button class="main" id="draw">🎲 Sacar número</button>
+    <div class="manual">
+      <input id="inp" type="number" min="1" max="100" placeholder="Cargar número (1-100)">
+      <button id="add">Cargar</button>
+    </div>
+    <div class="msg" id="msg"></div>
+    <div class="btns">
+      <button id="undo">↩ Deshacer</button>
+      <button id="reset">Reiniciar</button>
+      <button id="full">⛶ Tablero</button>
+    </div>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+<button id="exit-full" class="exit-full-btn">✕ Volver al panel</button>
+<script>
+const KEY='bingo-state';
+let called=[];
+try{const s=JSON.parse(localStorage.getItem(KEY)||'[]');if(Array.isArray(s))called=s}catch(e){}
+const $=id=>document.getElementById(id);
+const grid=$('grid');
+for(let i=1;i<=100;i++){const d=document.createElement('div');d.className='cell';d.id='c'+i;d.textContent=i;d.onclick=()=>toggle(i);grid.appendChild(d)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(called))}catch(e){}}
+function msg(t){$('msg').textContent=t;if(t)setTimeout(()=>{if($('msg').textContent===t)$('msg').textContent=''},2500)}
+function render(pop){
+  for(let i=1;i<=100;i++){const c=$('c'+i);c.classList.toggle('on',called.includes(i));c.classList.remove('last')}
+  const last=called[called.length-1];
+  if(last)$('c'+last).classList.add('last');
+  const big=$('big');big.textContent=last||'–';
+  if(pop){big.classList.remove('pop');void big.offsetWidth;big.classList.add('pop')}
+  $('recent').innerHTML=called.slice(-6,-1).reverse().map(n=>'<span>'+n+'</span>').join('');
+  $('count').textContent=called.length+' de 100 · quedan '+(100-called.length);
+}
+function add(n){
+  if(!(n>=1&&n<=100)||!Number.isInteger(n)){msg('Ingresá un número del 1 al 100');return}
+  if(called.includes(n)){msg('El '+n+' ya salió');return}
+  called.push(n);save();render(true);
+}
+function toggle(n){
+  if(called.includes(n)){called=called.filter(x=>x!==n);save();render(false)}else add(n);
+}
+function draw(){
+  const left=[];for(let i=1;i<=100;i++)if(!called.includes(i))left.push(i);
+  if(!left.length){msg('¡Ya salieron todos!');return}
+  add(left[Math.floor(Math.random()*left.length)]);
+}
+$('draw').onclick=draw;
+$('add').onclick=()=>{add(parseInt($('inp').value,10));$('inp').value='';$('inp').focus()};
+$('inp').addEventListener('keydown',e=>{if(e.key==='Enter'){e.stopPropagation();$('add').click()}});
+$('undo').onclick=()=>{called.pop();save();render(false)};
+$('reset').onclick=()=>{if(confirm('¿Reiniciar el bingo?')){called=[];save();render(false)}};
+$('full').onclick=()=>document.body.classList.toggle('full');
+$('exit-full').onclick=()=>document.body.classList.remove('full');
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(e.code==='Space'||e.key==='Enter'){e.preventDefault();draw()}
+  if(e.key==='Escape')document.body.classList.remove('full');
+});
+render(false);
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# VS Code
+.vscode/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node / Dependencies (en caso de usar paquetes a futuro)
+node_modules/
+package-lock.json
+npm-debug.log*
