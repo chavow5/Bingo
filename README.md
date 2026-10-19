@@ -53,3 +53,4 @@ Para tener la aplicación online y compartir el enlace con amigos o proyectarla 
 5. Selecciona la rama **`main`** y la carpeta **`/(root)`**, luego haz clic en **Save**.
 6. En 1 o 2 minutos, tu Bingo estará publicado en:
    **`https://chavow5.github.io/Bingo/`**
+
